@@ -13,7 +13,6 @@ import (
 	"errors"
 	"strings"
 	"bytes"
-	"unicode"
 	"encoding/json"
 	"github.com/golang/gddo/httputil/header"
 )
@@ -30,9 +29,6 @@ type HttpError struct {
 	Msg string
 	Status int
 }
-
-// Define the error code for an integer string
-integerError := HttpError{ Msg: "data is an int and not a string", Status: http.StatusInternalServerError }
 
 // Start the http server - create a go-routine which defers a WaitGroup until after finished processing
 func startHttpServer(wg *sync.WaitGroup, port int) *http.Server {
@@ -80,12 +76,6 @@ func reverseString(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// Check if the message data is an integer - return an error
-	if isInteger(message.Data) {
-		respondWithErrorMessage(w, integerError)
-		return
-	}
-
 	// Copy message data into current and create a byte buffer to hold the reversed string
 	var current string = message.Data
 	var reversed bytes.Buffer 
@@ -127,18 +117,19 @@ func decodeJSONRequest(req *http.Request) (Message, HttpError) {
 
 	// Read all data from the request body
 	body, err := ioutil.ReadAll(req.Body)
-	
 	if err != nil {
 		log.Printf("Error reading body: %v", err)
 		httpError.Msg = "Can't read request body: " + err.Error()
 		httpError.Status = http.StatusBadRequest
+	} else if (messageContainsInteger(string(body))) {
+		httpError.Msg = "data is an int and not a string"
+		httpError.Status = http.StatusInternalServerError
 	} else {
 		// Initialize the JSON decoder which will throw an error if keys do not match decoded type
 		jsonStream := strings.NewReader(string(body))
 		decoder := json.NewDecoder(jsonStream)
 		decoder.DisallowUnknownFields()
 
-		// If here is an error from decoding our message - check to see what was wrong and return the appropriate error response to the client
 		if err := decoder.Decode(&message); err != nil {
 			var syntaxError *json.SyntaxError
 			var unmarshalTypeError *json.UnmarshalTypeError
@@ -184,14 +175,21 @@ func respondWithErrorMessage(w http.ResponseWriter, err HttpError) {
 	http.Error(w, string(em), err.Status)
 }
 
-// Helper method to determine if all characters in a string are numeric
-func isInteger(s string) bool {
-	for _, c := range s {
-		if !unicode.IsDigit(c) {
-			return false
-		}
+func messageContainsInteger(message string) bool {
+	jsonStream := strings.NewReader(message)
+	decoder := json.NewDecoder(jsonStream)
+	decoder.DisallowUnknownFields()
+	
+	type IntMessage struct {
+		Data int `json:"data"`
 	}
-	return true
+
+	var intMessage IntMessage
+	if err := decoder.Decode(&intMessage); err == nil {
+		return true
+	}
+	
+	return false
 }
 
 // Main method: Get port from the environment variables and start the server. Wait for responses to finish before exiting if the server is killed. This helps avoid missed packets.

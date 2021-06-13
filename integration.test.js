@@ -23,26 +23,27 @@ const requestBadlyFormed = '{"error":"Request body contains badly-formed JSON (a
 const requestBodyEmpty = '{"error":"Request body must not be empty"}'
 const requestContentHeaderNotJSON = '{"error":"Content-Type header is not application/json"}'
 const requestBodyTooLarge = '{"error":"Can\'t read request body: http: request body too large"}'
+const requestIntegerPayload = '{"error":"data is an int and not a string"}'
 
 describe('server-status tests', () => {
     test('all servers online - expect reversed string', async () => {
-	await exec("./start_server --all")
-	const response = await axios(validRequestOptions(8000))
-	expect(JSON.stringify(response.data)).toBe(reversedString)
+    	await exec("./start_server --all")
+    	const response = await axios(validRequestOptions(8000))
+    	expect(JSON.stringify(response.data)).toBe(reversedString)
     })
 
     test('business_one offline - expect reversed string', async () => {
-	await exec("./start_server --all")
-	await exec("./stop_server business_one")
-	const response = await axios(validRequestOptions(8000))
-	expect(JSON.stringify(response.data)).toBe(reversedString)
+    	await exec("./start_server --all")
+    	await exec("./stop_server business_one")
+    	const response = await axios(validRequestOptions(8000))
+    	expect(JSON.stringify(response.data)).toBe(reversedString)
     })
 
     test('business_two offline - expect reversed string', async () => {
-	await exec("./start_server --all")
-	await exec("./stop_server business_two")
-	const response = await axios(validRequestOptions(8000))
-	expect(JSON.stringify(response.data)).toBe(reversedString)
+    	await exec("./start_server --all")
+    	await exec("./stop_server business_two")
+    	const response = await axios(validRequestOptions(8000))
+    	expect(JSON.stringify(response.data)).toBe(reversedString)
     })
 
     test('both servers offline - expect error message', async () => {
@@ -80,10 +81,10 @@ describe('server-status tests', () => {
     })
 
     test('business_one online after 30 seconds - expect error message', async () => {
-	try {
+    	try {
     	    await exec("./start_server --all")
     	    await exec("./stop_server --business")
-	    setTimeout(function() {
+    	    setTimeout(function() {
     		exec("./start_server business_one")
     	    }, 30000)
     	    await axios(validRequestOptions(8000))
@@ -97,10 +98,10 @@ describe('server-status tests', () => {
     })
 
     test('business_two online after 30 seconds - expect error message', async () => {
-	try {
+    	try {
     	    await exec("./start_server --all")
     	    await exec("./stop_server --business")
-	    setTimeout(function() {
+    	    setTimeout(function() {
     		exec("./start_server business_two")
     	    }, 30000)
     	    await axios(validRequestOptions(8000))
@@ -143,6 +144,21 @@ describe('server access tests', () => {
 })
 
 describe('request formatting tests', () => {
+    test('request sent with integer payload - expect error message', async () => {
+    	await exec('./start_server --all')
+    	const response = await axios({
+    	    method: 'post',
+    	    url: 'http://ec2-35-183-71-175.ca-central-1.compute.amazonaws.com:8000',
+    	    headers: {
+    		'Content-Type': 'application/json'
+    	    },
+    	    data: {
+		data: 100
+	    }
+    	})
+    	expect(JSON.stringify(response.data)).toBe(requestIntegerPayload)
+    })
+
     test('request sent with invalid JSON - expect error message', async () => {
     	await exec('./start_server --all')
     	const response = await axios({
@@ -153,11 +169,11 @@ describe('request formatting tests', () => {
     	    },
     	    data: "some string"
     	})
-	expect(JSON.stringify(response.data)).toBe(requestBadlyFormed)
+    	expect(JSON.stringify(response.data)).toBe(requestBadlyFormed)
     })
 
     test('request sent with empty body - expect error message', async () => {
-	await exec('./start_server --all')
+    	await exec('./start_server --all')
     	const response = await axios({
     	    method: 'post',
     	    url: 'http://ec2-35-183-71-175.ca-central-1.compute.amazonaws.com:8000',
@@ -165,11 +181,11 @@ describe('request formatting tests', () => {
     		'Content-Type': 'application/json'
     	    }
     	})
-	expect(JSON.stringify(response.data)).toBe(requestBodyEmpty)
+    	expect(JSON.stringify(response.data)).toBe(requestBodyEmpty)
     })
 
     test('request sent with invalid headers - expect error message', async () => {
-	await exec('./start_server --all')
+    	await exec('./start_server --all')
     	const response = await axios({
     	    method: 'post',
     	    url: 'http://ec2-35-183-71-175.ca-central-1.compute.amazonaws.com:8000',
@@ -177,17 +193,17 @@ describe('request formatting tests', () => {
     		'Content-Type': 'text/plain'
     	    },
     	    data: {
-		data: "some string"
-	    }
+    		data: "some string"
+    	    }
     	})
     	expect(JSON.stringify(response.data)).toBe(requestContentHeaderNotJSON)
     })
 
     test('request sent with string too large (over 1MB) - expect error message', async () => {
-	await exec('./start_server --all')
+    	await exec('./start_server --all')
 
-	let longWord = new Array(1250000)
-	longWord = longWord.fill('A')
+    	let longWord = new Array(1250000)
+    	longWord = longWord.fill('A')
 	
     	const response = await axios({
     	    method: 'post',
@@ -196,10 +212,10 @@ describe('request formatting tests', () => {
     		'Content-Type': 'application/json'
     	    },
     	    data: {
-		data: longWord
-	    }
+    		data: longWord
+    	    }
     	})
 	
-	expect(JSON.stringify(response.data)).toBe(requestBodyTooLarge)
+    	expect(JSON.stringify(response.data)).toBe(requestBodyTooLarge)
     })
 })

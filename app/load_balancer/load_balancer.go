@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"io/ioutil"
-	"context"
 	"log"
 	"net/http"
 	"sync"
@@ -24,7 +23,7 @@ type HttpError struct {
 }
 
 // Define the error code for business server unavailable
-serverUnavailableError: HttpError{ Msg: "business server not available", Status: http.StatusGatewayTimeout }
+var serverUnavailableError HttpError = HttpError{ Msg: "business server not available", Status: http.StatusGatewayTimeout }
 
 // Map of channels to hold the current server statuses
 var statusChannels map[string](chan int64)
@@ -53,6 +52,14 @@ func tryReverseString(w http.ResponseWriter, req *http.Request) {
 	
 	timeout := 30 * time.Second
 	startTime := time.Now()
+
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+			
 	
 	// Attempt to send to a server for 30 seconds
 	for time.Now().Sub(startTime) < timeout {
@@ -72,14 +79,7 @@ func tryReverseString(w http.ResponseWriter, req *http.Request) {
 
 		// If we found a server that is online, parse the request body and send it off to the server
 		if len(fastestServer) > 0 {
-			body, err := ioutil.ReadAll(req.Body)
-
-			if err != nil {
-				log.Printf("Error reading body: %v", err)
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
+			
 			// Build a new URI from our request URI
 			url := fmt.Sprintf("%s%s", fastestServer, req.RequestURI)
 
@@ -178,7 +178,7 @@ func main() {
 	httpWaitGroup.Add(1)
 
 	// Start the http server
-	srv := startHttpServer(httpWaitGroup, port)
+	startHttpServer(httpWaitGroup, port)
 	log.Printf("business_server: listening on port %d", port)
 
 	// Wait for waitgroup to finish before exiting
