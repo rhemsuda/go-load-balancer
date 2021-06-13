@@ -1,0 +1,15 @@
+{
+  "name": "go-load-balancer",
+  "version": "1.0.0",
+  "description": "Load balancer written in Golang",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "axios": "^0.21.1",
+    "jest": "^27.0.4"
+  }
+}

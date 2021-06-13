@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Read container info from command line arguments
+if [[ "$1" == "" ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "-H" ]]; then
+    echo "Usage: start_server [container=required] [pemfile=optional] [user=optional] [serverAddr=optional]"
+    echo "Usage: start_server --all [pemfile=optional] [user=optional] [serverAddr=optional]" 
+    echo "Usage: start_server --business [pemfile=optional] [user=optional] [serverAddr=optional]"
+    echo -e "Start containers on the AWS EC2 instance. This command can be invoked with either a container name or one of the available flags listed below.\n"
+    echo -e "  container: the name of the container to start"
+    echo -e "  pemfile: the file location of the .pem file used to authorize quests to the AWS EC2 instance (default ~/.ssh/pem/ec2-user.pem)"
+    echo -e "  user: the user you wish to log into the server with (default ec2-user)"
+    echo -e "  serverAddr: the address to the EC2 server instance you wish to use (default ec2-35-183-71-175.ca-central-1.compute.amazonaws.com)\n"
+    echo -e "  --all\t\tStart all containers in local docker-compose.yml"
+    echo -e "  --business\tStart all business-server containers in local docker-compose.yml"
+    echo -e "\nExamples:"
+    echo -e "  start_server container_name   Start servers on the specified container"
+    echo -e "  start_server --all            Start servers on all containers"
+    echo -e "  start_server --business       Start servers on all business-server containers"
+    exit
+else
+    CONTAINER_NAME=$1
+fi
+
+if [[ "$2" != "" ]]; then
+    PEM_FILE_PATH=$2
+else
+    PEM_FILE_PATH="~/.ssh/pem/ec2-user.pem"
+fi
+
+if [[ "$3" != "" ]]; then
+    SERVER_USER=$3
+else
+    SERVER_USER="ec2-user"
+fi
+
+if [[ "$4" != "" ]]; then
+    SERVER_ADDR=$4
+else
+    SERVER_ADDR="ec2-35-183-71-175.ca-central-1.compute.amazonaws.com"
+fi
+
+APP_NAME="app"
+
+if [[ "$CONTAINER_NAME" == "--all" ]]; then
+    echo "Starting all containers..."
+    ssh -i $PEM_FILE_PATH $SERVER_USER@$SERVER_ADDR "cd ~/$APP_NAME && docker-compose up -d"
+elif [[ "$CONTAINER_NAME" == "--business" ]]; then
+    echo "Starting all business logic containers..."
+    ssh -i $PEM_FILE_PATH $SERVER_USER@$SERVER_ADDR "cd ~/$APP_NAME && docker-compose up -d business_one business_two"
+else
+    echo "Starting container $CONTAINER_NAME..."
+    ssh -i $PEM_FILE_PATH $SERVER_USER@$SERVER_ADDR "cd ~/$APP_NAME && docker-compose up -d $CONTAINER_NAME"
+fi

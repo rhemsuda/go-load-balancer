@@ -1,0 +1,38 @@
+#!/bin/bash
+
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] || [[ "$1" == "-H" ]]; then
+    echo "Usage: check_logs [pemfile=optional] [user=optional] [serverAddr=optional]"
+    echo -e "Check logs in containers on AWS EC2 instance\n"
+    echo -e "  pemfile: the file location of the .pem file used to authorize quests to the AWS EC2 instance (default ~/.ssh/pem/ec2-user.pem)"
+    echo -e "  user: the user you wish to log into the server with (default ec2-user)"
+    echo -e "  serverAddr: the address to the EC2 server instance you wish to read logs to (default ec2-35-183-71-175.ca-central-1.compute.amazonaws.com)"
+    echo -e "\nExamples:"
+    echo -e "  check_logs                   Check logs using default options"
+    echo -e "  check_logs key               Check logs server with a different key"
+    echo -e "  check_logs key user          Check logs server with different key and user"
+    echo -e "  check_logs key user server   Check logs server with different key, user, and server"  
+    exit
+fi
+
+
+if [[ "$1" != "" ]]; then
+    PEM_FILE_PATH=$1
+else
+    PEM_FILE_PATH="~/.ssh/pem/ec2-user.pem"
+fi
+
+if [[ "$2" != "" ]]; then
+    SERVER_USER=$2
+else
+    SERVER_USER="ec2-user"
+fi
+
+if [[ "$3" != "" ]]; then
+    SERVER_ADDR=$3
+else
+    SERVER_ADDR="ec2-35-183-71-175.ca-central-1.compute.amazonaws.com"
+fi
+
+APP_NAME="app"
+
+ssh -i $PEM_FILE_PATH $SERVER_USER@$SERVER_ADDR "cd ~/$APP_NAME && docker-compose logs"

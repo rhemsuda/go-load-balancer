@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  load_balancer:
+    network_mode: host
+    container_name: load_balancer
+    environment:
+      - PORT=8000
+    build:
+      context: ./load_balancer
+      dockerfile: ./Dockerfile
+  business_one:
+    network_mode: host
+    container_name: business_one
+    environment:
+      - PORT=8001
+    build:
+      context: ./business_server
+      dockerfile: ./Dockerfile
+  business_two:
+    network_mode: host
+    container_name: business_two
+    environment:
+      - PORT=8002
+    build:
+      context: ./business_server
+      dockerfile: ./Dockerfile
