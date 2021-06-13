@@ -27,8 +27,8 @@ $ chmod +x stop_server
 $ chmod +x check_logs
 ```
 2. Run the appropriate command. You can get information about how to use each command by specifying the **--help** or **-H** flags
-Examples:
 ```sh
+Examples:
 $ ./deploy_servers
 $ ./start_server --all
 $ ./stop_server --help
